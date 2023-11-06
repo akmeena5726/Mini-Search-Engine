@@ -20,6 +20,8 @@ private:
     // question is the question asked by the user
 
     // You can add attributes/helper functions here
+    Dict dict;
+    SearchEngine search;
 
 public:
 

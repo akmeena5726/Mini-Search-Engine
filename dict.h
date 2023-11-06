@@ -1,16 +1,47 @@
 // Do NOT add any other includes
-#include <string> 
+#include <string>
 #include <vector>
 #include <iostream>
 #include <fstream>
 using namespace std;
 
-class Dict {
+class Dict
+{
 private:
-    // You can add attributes/helper functions here
+    // Hash Table
+    vector<vector<pair<string, int>>> hash_table;
+    // Hash Function
 
-public: 
-    /* Please do not touch the attributes and 
+    int hash_function(string word)
+    {
+        // vector<int> Primes = {23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71,  73, 79};
+        // unsigned int hash = 0;
+        // int index;
+        // for (int i = 0; i < word.length(); i++)
+        // {
+        //     index = i % Primes.size();
+        //     hash += Primes[index] * int(word[i]);
+        // }
+        // return hash % hash_table_size;
+        
+        int hash = 0;
+        int s = word.length();
+        std::vector<int> primes = {37, 41, 43, 47, 53, 59, 61, 67, 71, 73};
+        int salt = 19;
+
+        for (int i = 0; i < s; i++)
+        {
+            int k = i % primes.size();
+            hash ^= ((word[i] * primes[k]) << 3) ^ (salt << (i % 5));
+        }
+
+        return hash % hash_table_size;
+    }
+    // Hash Table Size
+    int hash_table_size;
+
+public:
+    /* Please do not touch the attributes and
     functions within the guard lines placed below  */
     /* ------------------------------------------- */
     Dict();
