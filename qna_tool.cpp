@@ -19,6 +19,7 @@ void QNA_tool::insert_sentence(int book_code, int page, int paragraph, int sente
 
 Node* QNA_tool::get_top_k_para(string question, int k) {
     // Implement your function here
+    Node *head = new Node();
     return nullptr;
 }
 
