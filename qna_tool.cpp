@@ -79,56 +79,101 @@ vector<string> my_tokenize(string sentence)
     return tokens;
 }
 
-// sort the paragraph nodes based on score
-void merge_sort(vector<pair<int, paragraphNode *>> &para_score, int l, int r)
+
+void merge(vector<pair<double, paragraphNode*>> &scores, int s, int m, int e)
 {
-    if (l >= r)
+    vector<pair<double, paragraphNode*>> temp;
+
+    int i, j;
+    i = s;
+    j = m + 1;
+
+    while( i <= m && j <= e )
     {
-        return;
-    }
-    int mid = (l + r) / 2;
-    merge_sort(para_score, l, mid);
-    merge_sort(para_score, mid + 1, r);
-    vector<pair<int, paragraphNode *>> tmp;
-    int i = l;
-    int j = mid + 1;
-    while (i <= mid && j <= r)
-    {
-        if (para_score[i].first > para_score[j].first)
+        if (scores[i].first > scores[j].first)
         {
-            tmp.push_back(para_score[i]);
+            temp.push_back(scores[i]);
             i++;
         }
         else
         {
-            tmp.push_back(para_score[j]);
+            temp.push_back(scores[j]);
             j++;
         }
     }
-    while (i <= mid)
+
+    while (i <= m)
     {
-        tmp.push_back(para_score[i]);
+        temp.push_back(scores[i]);
         i++;
     }
-    while (j <= r)
+
+    while (j <= e)
     {
-        tmp.push_back(para_score[j]);
+        temp.push_back(scores[j]);
         j++;
     }
-    for (int k = l; k <= r; k++)
+
+    for (int i = s; i <= e; i++)
     {
-        para_score[k] = tmp[k - l];
+        scores[i] = temp[i - s];
     }
+}
+
+void merge_sort_para_score(vector<pair<double, paragraphNode*>> &scores, int s, int e)
+{
+    if (s >= e)
+    {
+        return;
+    }
+
+    int m = (s + e) / 2;
+
+    merge_sort_para_score(scores, s, m);
+    merge_sort_para_score(scores, m + 1, e);
+
+    merge(scores, s, m, e);
+}
+
+int power(int a, int b)
+{
+    int tmp = 1;
+    while (b > 0)
+    {
+        tmp *= a;
+        b--;
+    }
+    return tmp;
+}
+
+int hash_func(std::string id)
+{
+    int n = id.size();
+    int tmp = 0;
+
+    for (int i = 0; i < 5; i++)
+    {
+        int tmp1 = 0;
+        for (int j = i; j < n; j += 5)
+        {
+            tmp1 += id[j];
+        }
+        tmp += (tmp1 % 10) * power(10, i);
+    }
+    return tmp;
 }
 
 Node *QNA_tool::get_top_k_para(string question, int k)
 {
-    // Implement your function here
-
     vector<string> tokens = my_tokenize(question);
 
-    vector<paragraphNode *> para_nodes;
+    // hash table to store the paragraph nodes for fast access
+    vector<vector<paragraphNode *>> para_found;
+    para_found.resize(100000);
 
+
+    // reading the unigram_freq.csv file which contains word count for general corpus and
+    // storing it in a vector of pairs named unigram_freq
     fstream file;
     file.open("unigram_freq.csv", ios::in);
     string line;
@@ -136,22 +181,28 @@ Node *QNA_tool::get_top_k_para(string question, int k)
     getline(file, line);
     while (getline(file, line))
     {
-        cout << line << endl;
         stringstream ss(line);
         string word;
         getline(ss, word, ',');
-        long long freq = stoi(word);
+        string cnt;
+        getline(ss, cnt, ',');
+        long long freq = stoll(cnt);
         getline(ss, word, ',');
         unigram_freq.push_back(make_pair(word, freq));
     }
 
+    // iterating over the tokens and calculating the scores to all valid paragraphs i.e.
+    // paragraphs containing atleast one token
     for (string token : tokens)
     {
         int matches = 0;
+        // will get a linked list of all occurences of the token in the corpus
         Node *head = search.search(token, matches);
         double score = 0;
-        int spec_freq = dict.get_word_count(token);
-        int gen_freq = 0;
+        // getting the frequency of the token in the our corpus
+        long long spec_freq = dict.get_word_count(token);
+        long long gen_freq = 0;
+        // getting the frequency of the token in the general corpus
         for (int i = 0; i < unigram_freq.size(); i++)
         {
             if (unigram_freq[i].first == token)
@@ -160,70 +211,71 @@ Node *QNA_tool::get_top_k_para(string question, int k)
                 break;
             }
         }
-        // will replace this later with double
-        score = (spec_freq + 1) / (gen_freq + 1);
 
-        while (head->right != NULL)
+        score = ((double)spec_freq + (double)1) / ((double)gen_freq + (double)1);
+
+        // iterating over all occurences of the token in the corpus and updating the scores
+        while (head != NULL)
         {
-            string para = get_paragraph(head->book_code, head->page, head->paragraph);
-            vector<string> para_tokens = my_tokenize(para);
-            int para_cnt = 0;
-            for (string para_token : para_tokens)
-            {
-                if (para_token == token)
-                {
-                    para_cnt++;
-                }
-            }
-
-            // can be implemented better with hash table
             bool flag = false;
-            for (int i = 0; i < para_nodes.size(); i++)
+
+            string code = to_string(head->book_code) + to_string(head->page) + to_string(head->paragraph);
+            int hash_value = hash_func(code);
+
+            // checking if the paragraph is already present in the hash table
+            for (int i = 0; i < para_found[hash_value].size(); i++)
             {
-                if (
-                    (para_nodes[i]->book_code == head->book_code) &&
-                    (para_nodes[i]->page == head->page) &&
-                    (para_nodes[i]->paragraph == head->paragraph))
+                if (para_found[hash_value][i]->book_code == head->book_code && para_found[hash_value][i]->page == head->page && para_found[hash_value][i]->paragraph == head->paragraph)
                 {
-                    para_nodes[i]->score += (double)para_cnt * score;
+                    para_found[hash_value][i]->score += score;
                     flag = true;
                     break;
                 }
             }
 
+            // if not present, then create a new node and push it in the hash table
             if (!flag)
             {
-                paragraphNode *new_node = new paragraphNode(head->book_code, head->page, head->paragraph, head->sentence_no, head->offset, score * (double)para_cnt);
-                para_nodes.push_back(new_node);
-                head = head->right;
+                paragraphNode *new_node = new paragraphNode(head->book_code, head->page, head->paragraph, head->sentence_no, head->offset, score);
+                string code = to_string(head->book_code) + to_string(head->page) + to_string(head->paragraph);
+                int hash_value = hash_func(code);
+                para_found[hash_value].push_back(new_node);
             }
+            head = head->right;
         }
     }
 
-    vector<pair<int, paragraphNode *>> para_score;
-    for (int i = 0; i < para_nodes.size(); i++)
+    // merging all the paragraphs into a single vector
+    vector<pair<double, paragraphNode *>> para_score;
+
+    for (int i = 0; i < para_found.size(); i++)
     {
-        para_score.push_back(make_pair(para_nodes[i]->score, para_nodes[i]));
+        for (int j = 0; j < para_found[i].size(); j++)
+        {
+            para_score.push_back(make_pair(para_found[i][j]->score, para_found[i][j]));
+        }
     }
 
-    merge_sort(para_score, 0, para_score.size() - 1); // sort the paragraph nodes based on score (it might be wrong)
+    // sorting the paragraphs on the basis of their scores in descending order
+    merge_sort_para_score(para_score, 0 , para_score.size()-1);
 
     Node *head = new Node();
     Node *tail = new Node();
     head->right = tail;
     tail->left = head;
 
-    int i = para_score.size() - 1;
+    int i = 0;
     int temp = k;
 
-    while (k > 0 && i >= 0)
+    // creating a linked list of top k paragraphs
+    while (k > 0 && i < para_score.size()-1)
     {
         Node *new_node = new Node(para_score[i].second->book_code, para_score[i].second->page, para_score[i].second->paragraph, para_score[i].second->sentence_no, para_score[i].second->offset);
         tail->left->right = new_node;
         new_node->left = tail->left;
         new_node->right = tail;
         tail->left = new_node;
-        i--;
+        i++;
         k--;
     }
 
