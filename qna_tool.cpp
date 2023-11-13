@@ -23,10 +23,10 @@ public:
     int sentence_no;
     int offset;
     // int count;
-    double score;
+     long double score;
     paragraphNode *next;
     paragraphNode *prev;
-    paragraphNode(int book_code, int page, int paragraph, int sentence_no, int offset, double score)
+    paragraphNode(int book_code, int page, int paragraph, int sentence_no, int offset, long double score)
     {
         this->book_code = book_code;
         this->page = page;
@@ -34,8 +34,8 @@ public:
         this->sentence_no = sentence_no;
         this->offset = offset;
         this->score = score;
-        this->next = NULL;
-        this->prev = NULL;
+        this->next = nullptr;
+        this->prev = nullptr;
     }
 };
 
@@ -43,7 +43,7 @@ void QNA_tool::insert_sentence(int book_code, int page, int paragraph, int sente
 {
     // Implement your function here
     dict.insert_sentence(book_code, page, paragraph, sentence_no, sentence);
-    search.insert_sentence(book_code, page, paragraph, sentence_no, sentence);
+    my_search.insert_sentence(book_code, page, paragraph, sentence_no, sentence);
     return;
 }
 
@@ -80,9 +80,9 @@ vector<string> my_tokenize(string sentence)
 }
 
 
-void merge(vector<pair<double, paragraphNode*>> &scores, int s, int m, int e)
+void merge(vector<pair<long double, paragraphNode*>> &scores, int s, int m, int e)
 {
-    vector<pair<double, paragraphNode*>> temp;
+    vector<pair<long double, paragraphNode*>> temp;
 
     int i, j;
     i = s;
@@ -120,7 +120,7 @@ void merge(vector<pair<double, paragraphNode*>> &scores, int s, int m, int e)
     }
 }
 
-void merge_sort_para_score(vector<pair<double, paragraphNode*>> &scores, int s, int e)
+void merge_sort_para_score(vector<pair<long double, paragraphNode*>> &scores, int s, int e)
 {
     if (s >= e)
     {
@@ -135,7 +135,7 @@ void merge_sort_para_score(vector<pair<double, paragraphNode*>> &scores, int s, 
     merge(scores, s, m, e);
 }
 
-int power(int a, int b)
+int powerr(int a, int b)
 {
     int tmp = 1;
     while (b > 0)
@@ -146,7 +146,8 @@ int power(int a, int b)
     return tmp;
 }
 
-int hash_func(std::string id)
+// #include <bits/stdc++.h>
+int hash_funcc(std::string id)
 {
     int n = id.size();
     int tmp = 0;
@@ -158,9 +159,9 @@ int hash_func(std::string id)
         {
             tmp1 += id[j];
         }
-        tmp += (tmp1 % 10) * power(10, i);
+        tmp += (tmp1 % 10) * powerr(10, i);
     }
-    return tmp;
+    return tmp % 100000;
 }
 
 Node *QNA_tool::get_top_k_para(string question, int k)
@@ -195,12 +196,14 @@ Node *QNA_tool::get_top_k_para(string question, int k)
     // paragraphs containing atleast one token
     for (string token : tokens)
     {
+        // cout << "token: " << token << endl;
         int matches = 0;
         // will get a linked list of all occurences of the token in the corpus
-        Node *head = search.search(token, matches);
-        double score = 0;
+        Node *head = my_search.search(token, matches);
+        long double score = 0;
         // getting the frequency of the token in the our corpus
         long long spec_freq = dict.get_word_count(token);
+        // cout << "spec_freq: " << spec_freq << endl;
         long long gen_freq = 0;
         // getting the frequency of the token in the general corpus
         for (int i = 0; i < unigram_freq.size(); i++)
@@ -211,16 +214,17 @@ Node *QNA_tool::get_top_k_para(string question, int k)
                 break;
             }
         }
+        // cout << "gen_freq: " << gen_freq << endl;
 
-        score = ((double)spec_freq + (double)1) / ((double)gen_freq + (double)1);
-
+        score = ((long double)spec_freq + (long double)1)/((long double)gen_freq + (long double)1);
+        // cout << fixed << setprecision(8) << "score: " << score << endl;
         // iterating over all occurences of the token in the corpus and updating the scores
         while (head != NULL)
         {
             bool flag = false;
 
             string code = to_string(head->book_code) + to_string(head->page) + to_string(head->paragraph);
-            int hash_value = hash_func(code);
+            int hash_value = hash_funcc(code);
 
             // checking if the paragraph is already present in the hash table
             for (int i = 0; i < para_found[hash_value].size(); i++)
@@ -238,7 +242,7 @@ Node *QNA_tool::get_top_k_para(string question, int k)
             {
                 paragraphNode *new_node = new paragraphNode(head->book_code, head->page, head->paragraph, head->sentence_no, head->offset, score);
                 string code = to_string(head->book_code) + to_string(head->page) + to_string(head->paragraph);
-                int hash_value = hash_func(code);
+                int hash_value = hash_funcc(code);
                 para_found[hash_value].push_back(new_node);
             }
             head = head->right;
@@ -246,7 +250,7 @@ Node *QNA_tool::get_top_k_para(string question, int k)
     }
 
     // merging all the paragraphs into a single vector
-    vector<pair<double, paragraphNode *>> para_score;
+    vector<pair<long double, paragraphNode *>> para_score;
 
     for (int i = 0; i < para_found.size(); i++)
     {
@@ -265,11 +269,14 @@ Node *QNA_tool::get_top_k_para(string question, int k)
     tail->left = head;
 
     int i = 0;
-    int temp = k;
+    // int temp = k;
 
     // creating a linked list of top k paragraphs
-    while (k > 0 && i < para_score.size()-1)
+    while (k > 0 && i < para_score.size())
     {
+        // cout << "score: " << para_score[i].first << endl;
+        // cout << para_score[i].second->book_code << " " << para_score[i].second->page << " " << para_score[i].second->paragraph << endl;
+        // cout << "score: " << para_score[i].first << endl;
         Node *new_node = new Node(para_score[i].second->book_code, para_score[i].second->page, para_score[i].second->paragraph, para_score[i].second->sentence_no, para_score[i].second->offset);
         tail->left->right = new_node;
         new_node->left = tail->left;
@@ -279,8 +286,8 @@ Node *QNA_tool::get_top_k_para(string question, int k)
         k--;
     }
 
-    tail->left->right = NULL;
-    tail->left = NULL;
+    tail->left->right = nullptr;
+    tail->left = nullptr;
     return head->right;
 }
 
@@ -298,7 +305,7 @@ std::string QNA_tool::get_paragraph(int book_code, int page, int paragraph)
 
     cout << "Book_code: " << book_code << " Page: " << page << " Paragraph: " << paragraph << endl;
 
-    std::string filename = "mahatma-gandhi-collected-works-volume-";
+    std::string filename = "txtfiles/mahatma-gandhi-collected-works-volume-";
     filename += to_string(book_code);
     filename += ".txt";
 

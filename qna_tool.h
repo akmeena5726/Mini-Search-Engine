@@ -21,7 +21,7 @@ private:
 
     // You can add attributes/helper functions here
     Dict dict;
-    SearchEngine search;
+    SearchEngine my_search;
 
 public:
 

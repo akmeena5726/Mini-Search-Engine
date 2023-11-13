@@ -46,12 +46,14 @@ Node *SearchEngine::search(string pattern, int &n_matches)
 
     // Node h = Node();
     // Node t = Node();
-    Node *head =  new Node();
+    Node *head = new Node();
     Node *tail = new Node();
     head->right = tail;
     tail->left = head;
     head->left = NULL;
     tail->right = NULL;
+
+    string separators = " ,.-:!\"\'()?[];@";
 
     if (m == 0)
     {
@@ -70,19 +72,26 @@ Node *SearchEngine::search(string pattern, int &n_matches)
             {
                 for (int k = 0; k < m; k++)
                 {
+                    if (k == 0 && separators.find(sentence[i - 1]) == string::npos)
+                    {
+                        break;
+                    }
                     if (sentence[i + k] != pat[k])
                     {
                         break;
                     }
                     if (k == m - 1)
                     {
-                        n_matches++;
-                        // Node tbi(sentences[j].book_code, sentences[j].page, sentences[j].paragraph, sentences[j].sentence_no, i);
-                        Node *new_node = new Node(sentences[j].book_code, sentences[j].page, sentences[j].paragraph, sentences[j].sentence_no, i);
-                        tail->left->right = new_node;
-                        new_node->left = tail->left;
-                        new_node->right = tail;
-                        tail->left = new_node;
+                        if (separators.find(sentence[i + k + 1]) != string::npos || i + k + 1 == n)
+                        {
+                            n_matches++;
+                            // Node tbi(sentences[j].book_code, sentences[j].page, sentences[j].paragraph, sentences[j].sentence_no, i);
+                            Node *new_node = new Node(sentences[j].book_code, sentences[j].page, sentences[j].paragraph, sentences[j].sentence_no, i);
+                            tail->left->right = new_node;
+                            new_node->left = tail->left;
+                            new_node->right = tail;
+                            tail->left = new_node;
+                        }
                     }
                 }
             }

@@ -14,7 +14,7 @@ int main(){
 
         std::cout << "Inserting book " << i << std::endl;
 
-        std::string filename = "mahatma-gandhi-collected-works-volume-";
+        std::string filename = "txtfiles/mahatma-gandhi-collected-works-volume-";
         filename += to_string(i);
         filename += ".txt";
 
@@ -75,7 +75,7 @@ int main(){
 
     }
 
-    string question = "What were the views of Mahatma on Partition?";
+    string question = "What was the effect of tea and coffee according to Mahatma?";
 
     /*
         Part-1 : Get the top-k paragraphs

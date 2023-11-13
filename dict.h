@@ -9,7 +9,7 @@ class Dict
 {
 private:
     // Hash Table
-    vector<vector<pair<string, int>>> hash_table;
+    vector<vector<pair<string, long long>>> hash_table;
     // Hash Function
 
     int hash_function(string word)
@@ -50,7 +50,7 @@ public:
 
     void insert_sentence(int book_code, int page, int paragraph, int sentence_no, string sentence);
 
-    int get_word_count(string word);
+    long long get_word_count(string word);
 
     void dump_dictionary(string filename);
 

@@ -68,7 +68,7 @@ void Dict::insert_sentence(int book_code, int page, int paragraph, int sentence_
     }
 }
 
-int Dict::get_word_count(string word)
+long long Dict::get_word_count(string word)
 {
     // Implement your function here
     string wrd = "";
