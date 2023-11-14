@@ -4,15 +4,9 @@
 
 using namespace std;
 
-QNA_tool::QNA_tool()
-{
-    // Implement your function here
-}
-
-QNA_tool::~QNA_tool()
-{
-    // Implement your function here
-}
+// Edited by Girvar
+long long tot_words = 0;
+//
 
 class paragraphNode
 {
@@ -22,8 +16,8 @@ public:
     int paragraph;
     int sentence_no;
     int offset;
-    // int count;
-     long double score;
+    int tot_count;
+    long double score;
     paragraphNode *next;
     paragraphNode *prev;
     paragraphNode(int book_code, int page, int paragraph, int sentence_no, int offset, long double score)
@@ -39,13 +33,34 @@ public:
     }
 };
 
-void QNA_tool::insert_sentence(int book_code, int page, int paragraph, int sentence_no, string sentence)
+
+// Edited by Girvar
+vector<vector<paragraphNode*>>paras(100000);
+// paras.resize(100000); (not working)
+//
+
+
+QNA_tool::QNA_tool()
 {
     // Implement your function here
-    dict.insert_sentence(book_code, page, paragraph, sentence_no, sentence);
-    my_search.insert_sentence(book_code, page, paragraph, sentence_no, sentence);
-    return;
 }
+
+QNA_tool::~QNA_tool()
+{
+    // Implement your function here
+}
+
+int powerr(int a, int b)
+{
+    int tmp = 1;
+    while (b > 0)
+    {
+        tmp *= a;
+        b--;
+    }
+    return tmp;
+}
+
 
 vector<string> my_tokenize(string sentence)
 {
@@ -79,6 +94,47 @@ vector<string> my_tokenize(string sentence)
     return tokens;
 }
 
+int hash_funcc(std::string id)
+{
+    int n = id.size();
+    int tmp = 0;
+
+    for (int i = 0; i < 5; i++)
+    {
+        int tmp1 = 0;
+        for (int j = i; j < n; j += 5)
+        {
+            tmp1 += id[j];
+        }
+        tmp += (tmp1 % 10) * powerr(10, i);
+    }
+    return tmp % 100000;
+}
+
+void QNA_tool::insert_sentence(int book_code, int page, int paragraph, int sentence_no, string sentence)
+{
+    // Implement your function here
+    dict.insert_sentence(book_code, page, paragraph, sentence_no, sentence);
+    my_search.insert_sentence(book_code, page, paragraph, sentence_no, sentence);
+
+    // Edited by Girvar
+    vector<string> tokens = my_tokenize(sentence);
+    tot_words += tokens.size();
+
+    string code = to_string(book_code) + to_string(page) + to_string(paragraph);
+    int hash_value = hash_funcc(code);
+    for (int i = 0 ; i<paras[hash_value].size() ; i++){
+        if (paras[hash_value][i]->book_code == book_code && paras[hash_value][i]->page == page && paras[hash_value][i]->paragraph == paragraph){
+            paras[hash_value][i]->tot_count += tokens.size();
+            return;
+        }
+    }
+    paragraphNode* new_node = new paragraphNode(book_code, page, paragraph, sentence_no, 0, tokens.size());
+    paras[hash_value].push_back(new_node);
+    //
+
+    return;
+}
 
 void merge(vector<pair<long double, paragraphNode*>> &scores, int s, int m, int e)
 {
@@ -133,35 +189,6 @@ void merge_sort_para_score(vector<pair<long double, paragraphNode*>> &scores, in
     merge_sort_para_score(scores, m + 1, e);
 
     merge(scores, s, m, e);
-}
-
-int powerr(int a, int b)
-{
-    int tmp = 1;
-    while (b > 0)
-    {
-        tmp *= a;
-        b--;
-    }
-    return tmp;
-}
-
-// #include <bits/stdc++.h>
-int hash_funcc(std::string id)
-{
-    int n = id.size();
-    int tmp = 0;
-
-    for (int i = 0; i < 5; i++)
-    {
-        int tmp1 = 0;
-        for (int j = i; j < n; j += 5)
-        {
-            tmp1 += id[j];
-        }
-        tmp += (tmp1 % 10) * powerr(10, i);
-    }
-    return tmp % 100000;
 }
 
 Node *QNA_tool::get_top_k_para(string question, int k)
@@ -297,6 +324,122 @@ void QNA_tool::query(string question, string filename)
     std::cout << "Q: " << question << std::endl;
     std::cout << "A: "
               << "Studying COL106 :)" << std::endl;
+
+    // Edited by Girvar
+    // cout<<"yes1"<<endl;
+    vector<string> tokens = my_tokenize(question);
+    vector<pair<long double, string>> tot_scores;       // will contains total scores of each word
+    // cout<<"yes2"<<endl;
+    for (int i = 0 ; i<tokens.size() ; i++){
+        string token = tokens[i];
+        int tot_count = dict.get_word_count(token);
+        long double temp_score = (long double)tot_count/(long double)tot_words;
+        tot_scores.push_back(make_pair(temp_score, token));
+    }
+    // cout<<"yes3"<<endl;
+    vector<vector<paragraphNode *>> para_found;
+    para_found.resize(100000);
+
+    for (string token : tokens)
+    {
+        // cout<<"yes4"<<endl;
+        // cout << "token: " << token << endl;
+        int matches = 0;
+        // will get a linked list of all occurences of the token in the corpus
+        Node *head = my_search.search(token, matches);
+        long double score = 0;
+        // cout<<"yes5"<<endl;
+        // getting the frequency of the token in the our corpus
+        long long spec_freq = dict.get_word_count(token);
+        // cout << "spec_freq: " << spec_freq << endl;
+        long long gen_freq = 0;
+        
+        // cout << fixed << setprecision(8) << "score: " << score << endl;
+        // iterating over all occurences of the token in the corpus and updating the scores
+        while (head != NULL)
+        {
+            bool flag = false;
+
+            string code = to_string(head->book_code) + to_string(head->page) + to_string(head->paragraph);
+            int hash_value = hash_funcc(code);
+
+            for (int i = 0 ; i<paras[hash_value].size() ; i++){
+                if (paras[hash_value][i]->book_code == head->book_code && paras[hash_value][i]->page == head->page && paras[hash_value][i]->paragraph == head->paragraph){
+                    gen_freq = paras[hash_value][i]->tot_count;
+                    break;
+                }
+            }
+
+            int temp_total_count = dict.get_word_count(token);
+
+            score = ((long double)(1))/(((long double)(temp_total_count)));
+
+            // checking if the paragraph is already present in the hash table
+            for (int i = 0; i < para_found[hash_value].size(); i++)
+            {
+                if (para_found[hash_value][i]->book_code == head->book_code && para_found[hash_value][i]->page == head->page && para_found[hash_value][i]->paragraph == head->paragraph)
+                {
+                    para_found[hash_value][i]->score += score;
+                    flag = true;
+                    break;
+                }
+            }
+
+            // if not present, then create a new node and push it in the hash table
+            if (!flag)
+            {
+                paragraphNode *new_node = new paragraphNode(head->book_code, head->page, head->paragraph, head->sentence_no, head->offset, score);
+                new_node->tot_count = gen_freq;
+                string code = to_string(head->book_code) + to_string(head->page) + to_string(head->paragraph);
+                int hash_value = hash_funcc(code);
+                para_found[hash_value].push_back(new_node);
+            }
+            head = head->right;
+        }
+    }
+
+    // cout<<"yes6"<<endl;
+    vector<pair<long double, paragraphNode *>> para_score;
+
+    for (int i = 0; i < para_found.size(); i++)
+    {
+        for (int j = 0; j < para_found[i].size(); j++)
+        {
+            para_score.push_back(make_pair(para_found[i][j]->score, para_found[i][j]));
+        }
+    }
+    // cout<<"yes7"<<endl;
+    // sorting the paragraphs on the basis of their scores in descending order
+    merge_sort_para_score(para_score, 0 , para_score.size()-1);
+    int ind = para_score.size()-1;
+    int total_words = 0;
+    Node* head = new Node();
+    Node* tail = new Node();
+    head->right = tail;
+    tail->left = head;
+    int k = 0;
+    // cout<<"yes8"<<endl;
+    while (ind > 0){
+        if ((total_words + para_score[ind].second->tot_count) > 500){
+            break;
+        }
+        else {
+            total_words += para_score[ind].second->tot_count;
+            cout<<total_words<<endl;
+            Node* new_node = new Node(para_score[ind].second->book_code, para_score[ind].second->page, para_score[ind].second->paragraph, para_score[ind].second->sentence_no, para_score[ind].second->offset);
+            tail->left->right = new_node;
+            new_node->left = tail->left;
+            new_node->right = tail;
+            tail->left = new_node;
+            k++;
+            ind--;
+        }
+    }
+    tail->left->right = NULL;
+    tail->left = NULL;
+    query_llm(filename, head->right, k, "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", question);
+
+    //
     return;
 }
 

@@ -60,6 +60,8 @@ Node *SearchEngine::search(string pattern, int &n_matches)
         return head;
     }
 
+    // yaha pe sentances ko direct tokenise karke compare karke linked list mein add kar denge
+
     for (int j = 0; j < sentences.size(); j++)
     {
         string sentence = sentences[j].sentence;
@@ -106,3 +108,6 @@ Node *SearchEngine::search(string pattern, int &n_matches)
     tail->left = NULL;
     return head->right;
 }
+
+
+// See line no. 63

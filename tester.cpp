@@ -75,7 +75,7 @@ int main(){
 
     }
 
-    string question = "What was the effect of tea and coffee according to Mahatma?";
+    string question = "What were the views of Mahatma Gandhi on the Partition of India?";
 
     /*
         Part-1 : Get the top-k paragraphs
