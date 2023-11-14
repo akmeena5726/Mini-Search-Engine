@@ -33,12 +33,10 @@ public:
     }
 };
 
-
 // Edited by Girvar
-vector<vector<paragraphNode*>>paras(100000);
+vector<vector<paragraphNode *>> paras(100000);
 // paras.resize(100000); (not working)
 //
-
 
 QNA_tool::QNA_tool()
 {
@@ -122,28 +120,30 @@ void QNA_tool::insert_sentence(int book_code, int page, int paragraph, int sente
 
     string code = to_string(book_code) + to_string(page) + to_string(paragraph);
     int hash_value = hash_funcc(code);
-    for (int i = 0 ; i<paras[hash_value].size() ; i++){
-        if (paras[hash_value][i]->book_code == book_code && paras[hash_value][i]->page == page && paras[hash_value][i]->paragraph == paragraph){
+    for (int i = 0; i < paras[hash_value].size(); i++)
+    {
+        if (paras[hash_value][i]->book_code == book_code && paras[hash_value][i]->page == page && paras[hash_value][i]->paragraph == paragraph)
+        {
             paras[hash_value][i]->tot_count += tokens.size();
             return;
         }
     }
-    paragraphNode* new_node = new paragraphNode(book_code, page, paragraph, sentence_no, 0, tokens.size());
+    paragraphNode *new_node = new paragraphNode(book_code, page, paragraph, sentence_no, 0, tokens.size());
     paras[hash_value].push_back(new_node);
     //
 
     return;
 }
 
-void merge(vector<pair<long double, paragraphNode*>> &scores, int s, int m, int e)
+void merge(vector<pair<long double, paragraphNode *>> &scores, int s, int m, int e)
 {
-    vector<pair<long double, paragraphNode*>> temp;
+    vector<pair<long double, paragraphNode *>> temp;
 
     int i, j;
     i = s;
     j = m + 1;
 
-    while( i <= m && j <= e )
+    while (i <= m && j <= e)
     {
         if (scores[i].first > scores[j].first)
         {
@@ -175,7 +175,7 @@ void merge(vector<pair<long double, paragraphNode*>> &scores, int s, int m, int 
     }
 }
 
-void merge_sort_para_score(vector<pair<long double, paragraphNode*>> &scores, int s, int e)
+void merge_sort_para_score(vector<pair<long double, paragraphNode *>> &scores, int s, int e)
 {
     if (s >= e)
     {
@@ -193,11 +193,10 @@ void merge_sort_para_score(vector<pair<long double, paragraphNode*>> &scores, in
 Node *QNA_tool::get_top_k_para(string question, int k)
 {
     vector<string> tokens = my_tokenize(question);
-    
+
     // hash table to store the paragraph nodes for fast access
     vector<vector<paragraphNode *>> para_found;
     para_found.resize(100000);
-
 
     // reading the unigram_freq.csv file which contains word count for general corpus and
     // storing it in a vector of pairs named unigram_freq
@@ -242,7 +241,7 @@ Node *QNA_tool::get_top_k_para(string question, int k)
         }
         // cout << "gen_freq: " << gen_freq << endl;
 
-        score = ((long double)spec_freq + (long double)1)/((long double)gen_freq + (long double)1);
+        score = ((long double)spec_freq + (long double)1) / ((long double)gen_freq + (long double)1);
         // cout << fixed << setprecision(8) << "score: " << score << endl;
         // iterating over all occurences of the token in the corpus and updating the scores
         while (head != NULL)
@@ -287,7 +286,7 @@ Node *QNA_tool::get_top_k_para(string question, int k)
     }
 
     // sorting the paragraphs on the basis of their scores in descending order
-    merge_sort_para_score(para_score, 0 , para_score.size()-1);
+    merge_sort_para_score(para_score, 0, para_score.size() - 1);
 
     Node *head = new Node();
     Node *tail = new Node();
@@ -326,13 +325,15 @@ void QNA_tool::query(string question, string filename)
 
     // Edited by Girvar
     // cout<<"yes1"<<endl;
+    vector<string> common_words = {"what", "who", "when", "the", "a", "are", "in", "is", "was", "were", "has", "have", "had", "did", "do", "does", "of", "to", "and", "or", "on", "at", "by", "for", "with", "from", "as", "into", "like", "through", "after", "over", "between", "out", "against", "during", "without", "before", "under", "around", "among"};
     vector<string> tokens = my_tokenize(question);
-    vector<pair<long double, string>> tot_scores;       // will contains total scores of each word
+    vector<pair<long double, string>> tot_scores; // will contains total scores of each word
     // cout<<"yes2"<<endl;
-    for (int i = 0 ; i<tokens.size() ; i++){
+    for (int i = 0; i < tokens.size(); i++)
+    {
         string token = tokens[i];
         int tot_count = dict.get_word_count(token);
-        long double temp_score = (long double)tot_count/(long double)tot_words;
+        long double temp_score = (long double)tot_count / (long double)tot_words;
         tot_scores.push_back(make_pair(temp_score, token));
     }
     // cout<<"yes3"<<endl;
@@ -340,7 +341,20 @@ void QNA_tool::query(string question, string filename)
     para_found.resize(100000);
 
     for (string token : tokens)
-    {
+    {   
+        bool imp = true;
+        for (int i = 0; i < common_words.size(); i++)
+        {
+            if (token == common_words[i])
+            {
+                imp = false;
+                break;
+            }
+        }
+        if (!imp)
+        {
+            continue;
+        }
         // cout<<"yes4"<<endl;
         // cout << "token: " << token << endl;
         int matches = 0;
@@ -352,7 +366,7 @@ void QNA_tool::query(string question, string filename)
         long long spec_freq = dict.get_word_count(token);
         // cout << "spec_freq: " << spec_freq << endl;
         long long gen_freq = 0;
-        
+
         // cout << fixed << setprecision(8) << "score: " << score << endl;
         // iterating over all occurences of the token in the corpus and updating the scores
         while (head != NULL)
@@ -362,8 +376,10 @@ void QNA_tool::query(string question, string filename)
             string code = to_string(head->book_code) + to_string(head->page) + to_string(head->paragraph);
             int hash_value = hash_funcc(code);
 
-            for (int i = 0 ; i<paras[hash_value].size() ; i++){
-                if (paras[hash_value][i]->book_code == head->book_code && paras[hash_value][i]->page == head->page && paras[hash_value][i]->paragraph == head->paragraph){
+            for (int i = 0; i < paras[hash_value].size(); i++)
+            {
+                if (paras[hash_value][i]->book_code == head->book_code && paras[hash_value][i]->page == head->page && paras[hash_value][i]->paragraph == head->paragraph)
+                {
                     gen_freq = paras[hash_value][i]->tot_count;
                     break;
                 }
@@ -371,7 +387,7 @@ void QNA_tool::query(string question, string filename)
 
             int temp_total_count = dict.get_word_count(token);
 
-            score = ((long double)(1))/(((long double)(temp_total_count)));
+            score = ((long double)(1)) / (((long double)(temp_total_count)));
 
             // checking if the paragraph is already present in the hash table
             for (int i = 0; i < para_found[hash_value].size(); i++)
@@ -409,23 +425,26 @@ void QNA_tool::query(string question, string filename)
     }
     // cout<<"yes7"<<endl;
     // sorting the paragraphs on the basis of their scores in descending order
-    merge_sort_para_score(para_score, 0 , para_score.size()-1);
-    int ind = para_score.size()-1;
+    merge_sort_para_score(para_score, 0, para_score.size() - 1);
+    int ind = para_score.size() - 1;
     int total_words = 0;
-    Node* head = new Node();
-    Node* tail = new Node();
+    Node *head = new Node();
+    Node *tail = new Node();
     head->right = tail;
     tail->left = head;
     int k = 0;
     // cout<<"yes8"<<endl;
-    while (ind > 0){
-        if ((total_words + para_score[ind].second->tot_count) > 500){
+    while (ind > 0)
+    {
+        if ((total_words + para_score[ind].second->tot_count) > 500)
+        {
             break;
         }
-        else {
+        else
+        {
             total_words += para_score[ind].second->tot_count;
-            cout<<total_words<<endl;
-            Node* new_node = new Node(para_score[ind].second->book_code, para_score[ind].second->page, para_score[ind].second->paragraph, para_score[ind].second->sentence_no, para_score[ind].second->offset);
+            cout << total_words << endl;
+            Node *new_node = new Node(para_score[ind].second->book_code, para_score[ind].second->page, para_score[ind].second->paragraph, para_score[ind].second->sentence_no, para_score[ind].second->offset);
             tail->left->right = new_node;
             new_node->left = tail->left;
             new_node->right = tail;
