@@ -167,7 +167,7 @@ int hash_funcc(std::string id)
 Node *QNA_tool::get_top_k_para(string question, int k)
 {
     vector<string> tokens = my_tokenize(question);
-
+    dict.dump_dictionary("specific_freq.txt");
     // hash table to store the paragraph nodes for fast access
     vector<vector<paragraphNode *>> para_found;
     para_found.resize(100000);

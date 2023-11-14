@@ -72,7 +72,7 @@ Node *SearchEngine::search(string pattern, int &n_matches)
             {
                 for (int k = 0; k < m; k++)
                 {
-                    if (k == 0 && separators.find(sentence[i - 1]) == string::npos)
+                    if (k == 0 && separators.find(sentence[i - 1]) == string::npos || i == 0)
                     {
                         break;
                     }
