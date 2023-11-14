@@ -61,7 +61,6 @@ int powerr(int a, int b)
     return tmp;
 }
 
-
 vector<string> my_tokenize(string sentence)
 {
     vector<string> tokens;
@@ -194,7 +193,7 @@ void merge_sort_para_score(vector<pair<long double, paragraphNode*>> &scores, in
 Node *QNA_tool::get_top_k_para(string question, int k)
 {
     vector<string> tokens = my_tokenize(question);
-    dict.dump_dictionary("specific_freq.txt");
+    
     // hash table to store the paragraph nodes for fast access
     vector<vector<paragraphNode *>> para_found;
     para_found.resize(100000);
