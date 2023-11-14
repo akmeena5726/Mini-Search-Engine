@@ -1,5 +1,7 @@
-import openai
+from openai import OpenAI
 import sys
+client = OpenAI(api_key=sys.argv[1])
+
 
 
 if __name__ == '__main__':
@@ -10,7 +12,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Read the API key from the command line
-    openai.api_key = sys.argv[1]
+    
     num_paragraphs = int(sys.argv[2])
     print(num_paragraphs)
 
@@ -40,10 +42,8 @@ if __name__ == '__main__':
         "role": "user", "content": paragraphs
     }
 
-    chat = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[query]
-    )
+    chat = client.chat.completions.create(model="gpt-3.5-turbo",
+    messages=[query])
 
     reply = chat.choices[0].message.content
     print(reply)
