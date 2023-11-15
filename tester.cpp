@@ -75,7 +75,7 @@ int main(){
 
     }
 
-    string question = "What were the views of Mahatma Gandhi on the Partition of India?";
+    string question = "what was the role of mahatma gandhi in salt march?";
 
     /*
         Part-1 : Get the top-k paragraphs
