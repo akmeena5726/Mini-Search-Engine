@@ -323,12 +323,33 @@ void QNA_tool::query(string question, string filename)
     std::cout << "A: "
               << "Studying COL106 :)" << std::endl;
 
+    string my_question = question;
+    my_question += "\n";
+
     // Edited by Girvar
     // cout<<"yes1"<<endl;
     vector<string> common_words = {"what", "who", "when", "the", "a", "are", "in", "is", "was", "were", "has", "have", "had", "did", "do", "does", "of", "to", "and", "or", "on", "at", "by", "for", "with", "from", "as", "into", "like", "through", "after", "over", "between", "out", "against", "during", "without", "before", "under", "around", "among"};
     vector<string> tokens = my_tokenize(question);
     vector<pair<long double, string>> tot_scores; // will contains total scores of each word
     // cout<<"yes2"<<endl;
+
+    fstream file;
+    file.open("unigram_freq.csv", ios::in);
+    string line;
+    vector<pair<string, long long>> unigram_freq;
+    getline(file, line);
+    while (getline(file, line))
+    {
+        stringstream ss(line);
+        string word;
+        getline(ss, word, ',');
+        string cnt;
+        getline(ss, cnt, ',');
+        long long freq = stoll(cnt);
+        getline(ss, word, ',');
+        unigram_freq.push_back(make_pair(word, freq));
+    }
+
     for (int i = 0; i < tokens.size(); i++)
     {
         string token = tokens[i];
@@ -366,6 +387,16 @@ void QNA_tool::query(string question, string filename)
         long long spec_freq = dict.get_word_count(token);
         // cout << "spec_freq: " << spec_freq << endl;
         long long gen_freq = 0;
+        long long gen_freq2 = 0;
+
+        for (int i = 0; i < unigram_freq.size(); i++)
+        {
+            if (unigram_freq[i].first == token)
+            {
+                gen_freq = unigram_freq[i].second;
+                break;
+            }
+        }
 
         // cout << fixed << setprecision(8) << "score: " << score << endl;
         // iterating over all occurences of the token in the corpus and updating the scores
@@ -380,14 +411,14 @@ void QNA_tool::query(string question, string filename)
             {
                 if (paras[hash_value][i]->book_code == head->book_code && paras[hash_value][i]->page == head->page && paras[hash_value][i]->paragraph == head->paragraph)
                 {
-                    gen_freq = paras[hash_value][i]->tot_count;
+                    gen_freq2 = paras[hash_value][i]->tot_count;
                     break;
                 }
             }
 
             int temp_total_count = dict.get_word_count(token);
 
-            score = ((long double)(1)) / (((long double)(temp_total_count)));
+            score = ((long double)(1)) / (((long double)(gen_freq + 1))*((long double)(temp_total_count + 1)));
 
             // checking if the paragraph is already present in the hash table
             for (int i = 0; i < para_found[hash_value].size(); i++)
@@ -404,7 +435,7 @@ void QNA_tool::query(string question, string filename)
             if (!flag)
             {
                 paragraphNode *new_node = new paragraphNode(head->book_code, head->page, head->paragraph, head->sentence_no, head->offset, score);
-                new_node->tot_count = gen_freq;
+                new_node->tot_count = gen_freq2;
                 string code = to_string(head->book_code) + to_string(head->page) + to_string(head->paragraph);
                 int hash_value = hash_funcc(code);
                 para_found[hash_value].push_back(new_node);
@@ -436,12 +467,14 @@ void QNA_tool::query(string question, string filename)
     // cout<<"yes8"<<endl;
     while (ind > 0)
     {
-        if ((total_words + para_score[ind].second->tot_count) > 500)
+        if ((total_words + para_score[ind].second->tot_count) > 1000)
         {
             break;
         }
         else
         {
+            my_question += get_paragraph(para_score[ind].second->book_code, para_score[ind].second->page, para_score[ind].second->paragraph);
+            my_question += "\n";
             total_words += para_score[ind].second->tot_count;
             cout << total_words << endl;
             Node *new_node = new Node(para_score[ind].second->book_code, para_score[ind].second->page, para_score[ind].second->paragraph, para_score[ind].second->sentence_no, para_score[ind].second->offset);
@@ -455,7 +488,7 @@ void QNA_tool::query(string question, string filename)
     }
     tail->left->right = NULL;
     tail->left = NULL;
-    query_llm(filename, head->right, k, "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", question);
+    query_llm(filename, head->right, k, "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", my_question);
 
     //
     return;
