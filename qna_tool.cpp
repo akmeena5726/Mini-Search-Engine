@@ -362,7 +362,7 @@ void QNA_tool::query(string question, string filename)
     para_found.resize(100000);
 
     for (string token : tokens)
-    {   
+    {
         bool imp = true;
         for (int i = 0; i < common_words.size(); i++)
         {
@@ -418,7 +418,7 @@ void QNA_tool::query(string question, string filename)
 
             int temp_total_count = dict.get_word_count(token);
 
-            score = ((long double)(1)) / (((long double)(gen_freq + 1))*((long double)(temp_total_count + 1)));
+            score = ((long double)(1)) / (((long double)(temp_total_count + 1)));
 
             // checking if the paragraph is already present in the hash table
             for (int i = 0; i < para_found[hash_value].size(); i++)
